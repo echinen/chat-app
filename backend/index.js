@@ -3,6 +3,7 @@ const http = require('http');
 const express = require('express');
 const socketIO = require('socket.io');
 
+const { generateMessage } = require('./utils/message');
 const publicPath = path.join(__dirname, '../frontend');
 const port = process.env.PORT || 3005;
 const app = express();
@@ -12,45 +13,32 @@ const io = socketIO(server);
 app.use(express.static(publicPath));
 
 io.on('connection', (socket) => {
-    console.log('New user connected');
+    console.log('Novo usuário conectado.');
 
-    socket.on('createMessage', (message) => {
-        console.log('create message', message)
+    // Mensagem de Bem Vindo do Admin para o app.
+    socket.emit('newMessage', generateMessage('Admin', 'Bem vindo ao chat!'));
 
-        // Mensagem de Bem Vindo do Admin para o app.
-        socket.emit('newMessage', {
-            from: 'Admin',
-            text: 'Welcome to chat!',
-            createdAt: new Date().getTime()
-        })
+    // Mensagem de novo usuário do Admin
+    socket.broadcast.emit('newMessage', generateMessage('Admin', 'Entrou um novo usuário.'));
 
-        // Mensagem de novo usuário do Admin
-        socket.broadcast.emit('newMessage', {
-            from: 'Admin',
-            text: 'Entrou um novo usuário.',
-            createdAt: new Date().getTime()
-        })
+    socket.on('createMessage', (message, callback) => {
+        console.log('Criando mensagem:', message)
 
         // Enviar mensagem para todos inclusive você mesmo
-        io.emit('newMessage', {
-            from: message.from,
-            text: message.text,
-            createdAt: new Date().getTime()
-        })
+        io.emit('newMessage', generateMessage(message.from, message.text));
+        
+        callback('Recebido pelo server');
+    });
 
-        // Enviar mensagem para todos menos você mesmo
-        /* socket.broadcast.emit('newMessage', {
-            from: message.from,
-            text: message.text,
-            createdAt: new Date().getTime()
-        }) */
-    })
+    socket.on('createLocationMessage', (coords) => {
+        io.emit('newMessage', generateMessage('Admin', `${coords.latitude}, ${coords.longitude}`));
+    });
 
     socket.on('disconnect', () => {
-        console.log('User was disconnected')
+        console.log('Usuário foi desconectado com sucesso!')
     })
 });
 
 server.listen(port, () => {
-    console.log(`Server up and running on port: ${port}`);
+    console.log(`Servidor rodando na porta: ${port}`);
 });
