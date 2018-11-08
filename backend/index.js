@@ -4,6 +4,7 @@ const express = require('express');
 const socketIO = require('socket.io');
 
 const { generateMessage, generateLocationMessage } = require('./utils/message');
+const { isRealString } = require('./utils/validation');
 const publicPath = path.join(__dirname, '../frontend');
 const port = process.env.PORT || 3005;
 const app = express();
@@ -15,18 +16,29 @@ app.use(express.static(publicPath));
 io.on('connection', (socket) => {
     console.log('Novo usuário conectado.');
 
-    // Mensagem de Bem Vindo do Admin para o app.
-    socket.emit('newMessage', generateMessage('Admin', 'Bem vindo ao chat!'));
+    socket.on('join', (params, callback) => {
+        if (!isRealString(params.name) || !isRealString(params.room)) {
+            console.log(params)
+            callback('Nome e nome da sala são obrigatórios.')
+        }
 
-    // Mensagem de novo usuário do Admin
-    socket.broadcast.emit('newMessage', generateMessage('Admin', 'Entrou um novo usuário.'));
+        socket.join(params.room);
+
+        // Mensagem de Bem Vindo do Admin para o app.
+        socket.emit('newMessage', generateMessage('Admin', 'Bem vindo ao chat!'));
+
+        // Mensagem de novo usuário do Admin
+        socket.broadcast.to(params.room).emit('newMessage', generateMessage('Admin', `${params.name} acabou de entrar.`));
+
+        callback();
+    });
 
     socket.on('createMessage', (message, callback) => {
         console.log('Criando mensagem:', message)
 
         // Enviar mensagem para todos inclusive você mesmo
         io.emit('newMessage', generateMessage(message.from, message.text));
-        
+
         callback();
     });
 
