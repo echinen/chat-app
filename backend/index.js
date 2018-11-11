@@ -2,14 +2,16 @@ const path = require('path');
 const http = require('http');
 const express = require('express');
 const socketIO = require('socket.io');
-
 const { generateMessage, generateLocationMessage } = require('./utils/message');
 const { isRealString } = require('./utils/validation');
+const { Users } = require('./utils/users');
+
 const publicPath = path.join(__dirname, '../frontend');
 const port = process.env.PORT || 3005;
 const app = express();
 const server = http.createServer(app);
 const io = socketIO(server);
+const users = new Users();
 
 app.use(express.static(publicPath));
 
@@ -21,11 +23,14 @@ io.on('connection', (socket) => {
         const room = params['room'];
 
         if (!isRealString(name) || !isRealString(room)) {
-            console.log(params)
-            callback('Nome e nome da sala são obrigatórios.')
+            return callback('Nome e nome da sala são obrigatórios.')
         }
 
         socket.join(room);
+        users.removerUser(socket.id);
+        users.addUser(socket.id, name, room);
+
+        io.to(room).emit('updateUserList', users.getUserList(room));
 
         // Mensagem de Bem Vindo do Admin para o app.
         socket.emit('newMessage', generateMessage('Admin', 'Bem vindo ao chat!'));
@@ -37,7 +42,11 @@ io.on('connection', (socket) => {
     });
 
     socket.on('createMessage', (message, callback) => {
-        console.log('Criando mensagem:', message)
+        const user = users.getUser(socket.id);
+
+        if (user && isRealString(message.text)) {
+            io.to(user.room).emit('newMessage', generateMessage(user.name, message.text));
+        }
 
         // Enviar mensagem para todos inclusive você mesmo
         io.emit('newMessage', generateMessage(message.from, message.text));
@@ -46,11 +55,22 @@ io.on('connection', (socket) => {
     });
 
     socket.on('createLocationMessage', (coords) => {
-        io.emit('newLocationMessage', generateLocationMessage('Admin', coords.latitude, coords.longitude));
+        const user = users.getUser(socket.id);
+
+        if (user) {
+            io.to(user.room).emit('newLocationMessage', generateLocationMessage(user.name, coords.latitude, coords.longitude));   
+        }
     });
 
     socket.on('disconnect', () => {
-        console.log('Usuário foi desconectado com sucesso!')
+        const user = users.removerUser(socket.id);
+
+        if (user) {
+            io.to(user.room).emit('updateUserList', users.getUserList(user.room));
+            io.to(user.room).emit('newMessage', generateMessage('Admin', `${user.name} saiu da sala.`));
+
+            console.log('Usuário foi desconectado com sucesso!');
+        }
     })
 });
 
