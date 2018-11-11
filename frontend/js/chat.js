@@ -1,5 +1,5 @@
 const $ = jQuery;
-const socket = io();
+const socket = io.connect('http://localhost:3005');
 
 function scrollToBottom() {
     const messages = $('#messages');
