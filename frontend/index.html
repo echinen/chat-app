@@ -10,17 +10,23 @@
 
 <body class="centered-form">
     <div class="centered-form__form">
-        <form action="/chat.html">
+        <form action="/chat.html" id="chat-form">
         <div class="form-field">
             <h3>Entre no Chat</h3>
         </div>
         <div class="form-field">
-            <label>Nome</label>
-            <input type="text" name="name" autofocus/>
+            <label>Digite seu nome</label>
+            <input type="text" name="name" autofocus required/>
         </div>
         <div class="form-field">
-            <label>Nome da sala</label>
-            <input type="text" name="room" autofocus/>
+            <label>Sala</label>
+            <select name="room" form="chat-form" required>
+                <option selected value=""></option>
+                <option value="sala1">Sala1</option>
+                <option value="sala2">Sala2</option>
+                <option value="sala3">Sala3</option>
+                <option value="sala4">Sala4</option>
+            </select>
         </div>
         <div class="form-field">
             <button>Entrar</button>
