@@ -34,7 +34,7 @@ describe('Users', () => {
 
         const resultUser = users.addUser(user.id, user.name, user.room);
 
-        expect(users.users).toEqual([user]);
+        expect(resultUser).toEqual(user);
     });
 
     it('remover um usuário', () => {
@@ -49,7 +49,7 @@ describe('Users', () => {
         const userId = 'y';
         const user = users.removerUser(userId);
 
-        expect(user).toNotExist();
+        expect(user).toEqual(undefined);
         expect(users.users.length).toBe(3);
     });
 
@@ -64,20 +64,23 @@ describe('Users', () => {
         const userId = 'x';
         const user = users.getUser(userId);
 
-        expect(user).toNotExist();
+        expect(user).toEqual(undefined);
     });
 
     it('Retornar os nomes da sala Chat Test 1', () => {
         const roomName = 'Chat Test 1';
         const userList = users.getUserList(roomName);
 
-        expect(userList).toEqual(['User Test 1', 'User Test 3']);
+        expect(userList.length).toEqual(2);
+        expect(userList[0].name).toEqual('User Test 1');
+        expect(userList[1].name).toEqual('User Test 3');
     });
 
     it('Retornar os nomes da sala Chat Test 2', () => {
         const roomName = 'Chat Test 2';
         const userList = users.getUserList(roomName);
 
-        expect(userList).toEqual(['User Test 2']);
+        expect(userList.length).toEqual(1);
+        expect(userList[0].name).toEqual('User Test 2');
     });
 })
